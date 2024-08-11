@@ -13,9 +13,18 @@ interface PageProps {
   };
 }
 
+function canBeParsedAsInt(value: string): boolean {
+  const parsed = parseInt(value, 10);
+  return !isNaN(parsed) && Number.isInteger(parsed);
+}
+
 export default function DetailPage({ params: { id } }: PageProps) {
   const [note, setNote] = useState<NoteByIdQuery["note"]>(null);
   const router = useRouter();
+
+  if (!canBeParsedAsInt(id)) {
+    router.push("/");
+  }
 
   useEffect(() => {
     const fetch = async () => {
