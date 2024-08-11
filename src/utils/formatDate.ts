@@ -2,12 +2,12 @@
 
 type OptionType = {
   parseToInt?: boolean;
-  utc?: boolean;
+  simple?: boolean;
 };
 
 function formatDate(
   originalDateString: string | Date | number | null | undefined,
-  option: OptionType = { parseToInt: true, utc: true },
+  option: OptionType = { parseToInt: true, simple: true },
 ): string {
   if (!originalDateString) return "-";
 
@@ -17,18 +17,41 @@ function formatDate(
 
   const date = new Date(originalDateString);
 
-  let day, month, year;
-  if (option.utc) {
-    day = String(date.getUTCDate()).padStart(2, "0");
-    month = String(date.getUTCMonth() + 1).padStart(2, "0");
-    year = date.getUTCFullYear();
-  } else {
-    day = String(date.getDate()).padStart(2, "0");
-    month = String(date.getMonth() + 1).padStart(2, "0");
-    year = date.getFullYear();
-  }
+  if (option.simple) {
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
 
-  return `${day}.${month}.${year}`;
+    return `${day}.${month}.${year}`;
+  } else {
+    const monthNames = [
+      "January",
+      "February",
+      "March",
+      "April",
+      "May",
+      "June",
+      "July",
+      "August",
+      "September",
+      "October",
+      "November",
+      "December",
+    ];
+
+    const day = date.getDate();
+    const monthIndex = date.getMonth();
+    const year = date.getFullYear();
+
+    let hours = date.getHours();
+    const minutes = date.getMinutes();
+    const ampm = hours >= 12 ? "PM" : "AM";
+    hours = hours % 12;
+    hours = hours ? hours : 12;
+    const minutesStr = minutes < 10 ? "0" + minutes : minutes;
+
+    return `${monthNames[monthIndex]} ${day}, ${year} | ${hours}:${minutesStr} ${ampm}`;
+  }
 }
 
 export default formatDate;

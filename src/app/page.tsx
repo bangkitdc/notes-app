@@ -1,12 +1,11 @@
 "use client";
 
 import { NotesQuery } from "@/lib/graphql/generated/graphql";
+import { createNote, deleteNote, updateNote } from "@/lib/mutations/notes";
 import { fetchNotes } from "@/lib/queries/note";
 import formatDate from "@/utils/formatDate";
 import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
 import {
-  Spinner,
-  Box,
   Heading,
   Text,
   Flex,
@@ -19,12 +18,40 @@ import {
   CardHeader,
   IconButton,
   SkeletonText,
+  useDisclosure,
+  Modal,
+  ModalOverlay,
+  ModalContent,
+  ModalHeader,
+  ModalCloseButton,
+  ModalBody,
+  ModalFooter,
+  FormControl,
+  FormLabel,
+  Input,
+  useToast,
+  FormErrorMessage,
+  AlertDialog,
+  AlertDialogOverlay,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogBody,
+  AlertDialogFooter,
+  GridItem,
+  Box,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { useForm } from "react-hook-form";
+
+interface IFormNote {
+  id?: number;
+  title: string;
+  body: string;
+}
 
 export default function Home() {
-  const [notes, setNotes] = useState<NotesQuery["notes"]>([]);
+  const [notes, setNotes] = useState<NonNullable<NotesQuery["notes"]>>([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -45,22 +72,236 @@ export default function Home() {
 
   const router = useRouter();
 
+  const {
+    isOpen: isOpenModal,
+    onOpen: onOpenModal,
+    onClose: onCloseModal,
+  } = useDisclosure();
+
+  const {
+    isOpen: isOpenAlert,
+    onOpen: onOpenAlert,
+    onClose: onCloseAlert,
+  } = useDisclosure();
+  const toast = useToast();
+  const cancelRef = useRef<HTMLButtonElement>(null);
+
+  const {
+    handleSubmit,
+    register,
+    setValue,
+    getValues,
+    formState: { errors, isSubmitting },
+    reset,
+  } = useForm<IFormNote>();
+
+  const handleClose = () => {
+    onCloseModal();
+    onCloseAlert();
+    reset();
+  };
+
+  const onSubmit = async (params: IFormNote) => {
+    try {
+      if (params.id) {
+        const response = await updateNote({
+          id: params.id,
+          title: params.title,
+          body: params.body,
+        });
+
+        const newNote = response.note;
+        if (newNote) {
+          setNotes((prev) =>
+            prev.map((note) => (note.id === params.id ? newNote : note))
+          );
+          toast({
+            title: "Note updated.",
+            description: "Your note has been updated successfully.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+
+          onCloseModal();
+          reset();
+        }
+      } else {
+        const response = await createNote({
+          title: params.title,
+          body: params.body,
+        });
+
+        const newNote = response.note;
+        if (newNote) {
+          setNotes((prev) => [...prev, newNote]);
+          toast({
+            title: "Note created.",
+            description: "Your note has been added successfully.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+
+          onCloseModal();
+          reset();
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "An error occurred.",
+        description: error instanceof Error ? error.message : String(error),
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const onDelete = async () => {
+    const id = getValues("id");
+
+    try {
+      if (id) {
+        const response = await deleteNote({
+          id: id,
+        });
+
+        const deletedNote = response.note;
+        if (deletedNote) {
+          setNotes((prev) => prev.filter((note) => note.id !== id));
+          toast({
+            title: "Note deleted.",
+            description: "Your note has been deleted successfully.",
+            status: "success",
+            duration: 3000,
+            isClosable: true,
+          });
+
+          onCloseAlert();
+          reset();
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "An error occurred.",
+        description: error instanceof Error ? error.message : String(error),
+        status: "error",
+        duration: 3000,
+        isClosable: true,
+      });
+    }
+  };
+
+  const handleEdit = (note: IFormNote) => {
+    setValue("title", note.title);
+    setValue("body", note.body);
+    setValue("id", note.id);
+    onOpenModal();
+  };
+
+  const handleDelete = (id: number) => {
+    setValue("id", id);
+    onOpenAlert();
+  };
+
   return (
-    <Flex
-      h="full"
-      w="full"
+    <Box
+      maxW="7xl"
+      mx="auto"
+      px={{ base: 8, sm: 16 }}
+      pt={{ base: 8, sm: 16 }}
+      pb={16}
+      minH="100vh"
       display="flex"
       flexDir="column"
-      justifyContent="center"
-      alignItems="center"
+      backgroundColor="#f9f9f9"
+      position="relative"
     >
-      <Flex justifyContent="space-between" w="full">
+      <AlertDialog
+        isOpen={isOpenAlert}
+        leastDestructiveRef={cancelRef}
+        onClose={handleClose}
+      >
+        <AlertDialogOverlay>
+          <AlertDialogContent>
+            <AlertDialogHeader fontSize="lg" fontWeight="bold">
+              Delete Note
+            </AlertDialogHeader>
+
+            <AlertDialogBody>
+              Are you sure? You can&apos;t undo this action afterwards.
+            </AlertDialogBody>
+
+            <AlertDialogFooter>
+              <Button ref={cancelRef} onClick={onCloseAlert}>
+                Cancel
+              </Button>
+              <Button colorScheme="red" onClick={onDelete} ml={3}>
+                Delete
+              </Button>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialogOverlay>
+      </AlertDialog>
+      <Modal isOpen={isOpenModal} onClose={handleClose}>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <ModalOverlay />
+          <ModalContent>
+            <ModalHeader>Add Note</ModalHeader>
+            <ModalCloseButton />
+            <ModalBody>
+              <FormControl isInvalid={!!errors.title}>
+                <FormLabel>Title</FormLabel>
+                <Input
+                  id="title"
+                  placeholder="Title"
+                  {...register("title", {
+                    required: "Title is required",
+                  })}
+                />
+                <FormErrorMessage>
+                  {errors.title && errors.title.message}
+                </FormErrorMessage>
+              </FormControl>
+
+              <FormControl mt={4} isInvalid={!!errors.body}>
+                <FormLabel>Body</FormLabel>
+                <Input
+                  id="body"
+                  placeholder="Body"
+                  {...register("body", {
+                    required: "Body is required",
+                  })}
+                />
+                <FormErrorMessage>
+                  {errors.body && errors.body.message}
+                </FormErrorMessage>
+              </FormControl>
+            </ModalBody>
+
+            <ModalFooter>
+              <Button
+                colorScheme="blue"
+                mr={3}
+                isLoading={isSubmitting}
+                type="submit"
+              >
+                Save
+              </Button>
+              <Button onClick={onCloseModal}>Cancel</Button>
+            </ModalFooter>
+          </ModalContent>
+        </form>
+      </Modal>
+
+      <Flex justifyContent="space-between" w="full" alignItems="center">
         <Heading fontSize="x-large">Your Notes</Heading>
         <Button
           leftIcon={<AddIcon />}
-          size="sm"
           colorScheme="blue"
           variant="solid"
+          onClick={onOpenModal}
         >
           Add
         </Button>
@@ -68,8 +309,9 @@ export default function Home() {
 
       <SimpleGrid w="full" columns={{ sm: 2, md: 3 }} spacing="8" mt={8}>
         {isLoading ? (
-          <>
+          Array.from({ length: 2 }).map((_, index) => (
             <Card
+              key={index}
               rounded={16}
               boxShadow="md"
               direction={{ base: "column", sm: "row" }}
@@ -90,9 +332,9 @@ export default function Home() {
                 </CardFooter>
               </Stack>
             </Card>
-          </>
-        ) : (
-          notes?.map((note) => (
+          ))
+        ) : notes?.length > 0 ? (
+          notes.map((note) => (
             <Card
               onClick={() => router.push(`/notes/${note.id}`)}
               rounded={16}
@@ -120,7 +362,10 @@ export default function Home() {
                         colorScheme="gray"
                         aria-label="Edit note"
                         icon={<EditIcon />}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleEdit(note);
+                        }}
                       />
                       <IconButton
                         size="sm"
@@ -128,7 +373,10 @@ export default function Home() {
                         colorScheme="gray"
                         aria-label="Delete note"
                         icon={<DeleteIcon />}
-                        onClick={(e) => e.stopPropagation()}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDelete(note.id);
+                        }}
                       />
                     </Flex>
                   </Flex>
@@ -146,8 +394,12 @@ export default function Home() {
               </Stack>
             </Card>
           ))
+        ) : (
+          <GridItem colSpan={3} w="full" h="full" textAlign="center" p={4}>
+            <Text>No notes available.</Text>
+          </GridItem>
         )}
       </SimpleGrid>
-    </Flex>
+    </Box>
   );
 }
