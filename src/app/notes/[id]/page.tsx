@@ -33,8 +33,11 @@ export default function DetailPage({ params: { id } }: PageProps) {
     const fetch = async () => {
       try {
         const { note } = await fetchNote(parseInt(id));
+        console.log(note);
         if (note) {
           setNote(note);
+        } else {
+          router.push("/");
         }
       } catch (err) {
         console.error("Failed to fetch notes");
@@ -42,7 +45,7 @@ export default function DetailPage({ params: { id } }: PageProps) {
     };
 
     fetch();
-  }, [id]);
+  }, [id, router]);
 
   if (!note) return null;
 
