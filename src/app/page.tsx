@@ -39,6 +39,7 @@ import {
   AlertDialogFooter,
   GridItem,
   Box,
+  Textarea,
 } from "@chakra-ui/react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -134,7 +135,7 @@ export default function Home() {
 
         const newNote = response.note;
         if (newNote) {
-          setNotes((prev) => [...prev, newNote]);
+          setNotes((prev) => [newNote, ...prev]);
           toast({
             title: "Note created.",
             description: "Your note has been added successfully.",
@@ -247,7 +248,7 @@ export default function Home() {
       <Modal isOpen={isOpenModal} onClose={handleClose}>
         <form onSubmit={handleSubmit(onSubmit)}>
           <ModalOverlay />
-          <ModalContent>
+          <ModalContent mx={8}>
             <ModalHeader>Add Note</ModalHeader>
             <ModalCloseButton />
             <ModalBody>
@@ -267,7 +268,7 @@ export default function Home() {
 
               <FormControl mt={4} isInvalid={!!errors.body}>
                 <FormLabel>Body</FormLabel>
-                <Input
+                <Textarea
                   id="body"
                   placeholder="Body"
                   {...register("body", {
@@ -307,7 +308,7 @@ export default function Home() {
         </Button>
       </Flex>
 
-      <SimpleGrid w="full" columns={{ sm: 2, md: 3 }} spacing="8" mt={8}>
+      <SimpleGrid w="full" columns={{ md: 2, lg: 3 }} spacing="8" mt={8}>
         {isLoading ? (
           Array.from({ length: 2 }).map((_, index) => (
             <Card
@@ -316,7 +317,7 @@ export default function Home() {
               boxShadow="md"
               direction={{ base: "column", sm: "row" }}
               overflow="hidden"
-              minH={172}
+              minH={162}
             >
               <Stack w="full" p={4}>
                 <CardHeader px={0} py={3}>
@@ -340,9 +341,9 @@ export default function Home() {
               rounded={16}
               boxShadow="md"
               key={note.id}
-              direction={{ base: "column", sm: "row" }}
+              direction="row"
               overflow="hidden"
-              minH={172}
+              minH={162}
               cursor="pointer"
             >
               <Stack w="full" p={4}>

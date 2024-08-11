@@ -62,7 +62,11 @@ const resolvers = {
     }
   },
   Query: {
-    notes: async () => prisma.note.findMany(),
+    notes: async () => prisma.note.findMany({
+      orderBy: {
+        createdAt: 'desc'
+      },
+    }),
     note: async (_: never, args: { id: number }) => prisma.note.findFirst({
       where: {
         id: args.id

@@ -1,5 +1,3 @@
-"use server";
-
 import { fetchNote } from "@/lib/queries/note";
 import formatDate from "@/utils/formatDate";
 import {
