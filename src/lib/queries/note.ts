@@ -45,8 +45,10 @@ export const fetchNote = async (id: number): Promise<ReturnNoteType> => {
       variables: { id },
     });
 
+    const note = data.note ?? null;
+
     return {
-      note: data.note
+      note
     };
   } catch (error) {
     if (error instanceof ApolloError) {

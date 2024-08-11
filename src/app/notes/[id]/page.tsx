@@ -1,5 +1,9 @@
+"use client";
+
+import { NoteByIdQuery } from "@/lib/graphql/generated/graphql";
 import { fetchNote } from "@/lib/queries/note";
 import formatDate from "@/utils/formatDate";
+import { ArrowLeftIcon, ChevronLeftIcon } from "@chakra-ui/icons";
 import {
   Link,
   Card,
@@ -8,9 +12,12 @@ import {
   Heading,
   Text,
   Box,
+  SkeletonText,
+  Button,
+  IconButton,
 } from "@chakra-ui/react";
-import { notFound } from "next/navigation";
-import React from "react";
+import { notFound, useRouter } from "next/navigation";
+import React, { useEffect, useState } from "react";
 
 interface PageProps {
   params: {
@@ -18,12 +25,26 @@ interface PageProps {
   };
 }
 
-export default async function DetailPage({ params: { id } }: PageProps) {
-  const { note } = await fetchNote(parseInt(id));
+export default function DetailPage({ params: { id } }: PageProps) {
+  const [note, setNote] = useState<NoteByIdQuery["note"]>(null);
+  const router = useRouter();
 
-  if (!note) {
-    notFound();
-  }
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const { note } = await fetchNote(parseInt(id));
+        if (note) {
+          setNote(note);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notes");
+      }
+    };
+
+    fetch();
+  }, [id]);
+
+  if (!note) return null;
 
   return (
     <Box
@@ -40,25 +61,18 @@ export default async function DetailPage({ params: { id } }: PageProps) {
     >
       <Flex direction="column" gap={4}>
         <Flex direction="column" gap={2}>
-          <Flex direction="row" gap={4} alignItems="center">
-            <Link top={8} left={8} href="/">
-              <svg
-                width="24px"
-                height="24px"
-                viewBox="0 0 24 24"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  id="primary"
-                  d="M21,11H5.41l5.3-5.29A1,1,0,1,0,9.29,4.29l-7,7a1,1,0,0,0,0,1.42l7,7a1,1,0,0,0,1.42,0,1,1,0,0,0,0-1.42L5.41,13H21a1,1,0,0,0,0-2Z"
-                ></path>
-              </svg>
-            </Link>
+          <Flex direction="row" gap={2} alignItems="center">
+            <IconButton
+              onClick={() => router.push("/")}
+              aria-label="Back button"
+              variant="ghost"
+              icon={<ChevronLeftIcon w={8} h={8} />}
+            />
             <Heading>{note?.title}</Heading>
           </Flex>
           <Text fontSize="sm">
             Created at{" "}
-            {formatDate(note.createdAt, { parseToInt: true, simple: false })}
+            {formatDate(note?.createdAt, { parseToInt: true, simple: false })}
           </Text>
         </Flex>
         <Card
@@ -69,7 +83,7 @@ export default async function DetailPage({ params: { id } }: PageProps) {
           minH={172}
         >
           <CardBody p={5}>
-            <Text>{note.body}</Text>
+            <Text>{note?.body}</Text>
           </CardBody>
         </Card>
       </Flex>
