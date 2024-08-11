@@ -1,95 +1,153 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+"use client";
+
+import { NotesQuery } from "@/lib/graphql/generated/graphql";
+import { fetchNotes } from "@/lib/queries/note";
+import formatDate from "@/utils/formatDate";
+import { AddIcon, DeleteIcon, EditIcon } from "@chakra-ui/icons";
+import {
+  Spinner,
+  Box,
+  Heading,
+  Text,
+  Flex,
+  Card,
+  Stack,
+  CardBody,
+  CardFooter,
+  Button,
+  SimpleGrid,
+  CardHeader,
+  IconButton,
+  SkeletonText,
+} from "@chakra-ui/react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 
 export default function Home() {
+  const [notes, setNotes] = useState<NotesQuery["notes"]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetch = async () => {
+      try {
+        const { notes } = await fetchNotes();
+        if (notes) {
+          setNotes(notes);
+          setIsLoading(false);
+        }
+      } catch (err) {
+        console.error("Failed to fetch notes");
+      }
+    };
+
+    fetch();
+  }, []);
+
+  const router = useRouter();
+
   return (
-    <main className={styles.main}>
-      <div className={styles.description}>
-        <p>
-          Get started by editing&nbsp;
-          <code className={styles.code}>src/app/page.tsx</code>
-        </p>
-        <div>
-          <a
-            href="https://vercel.com?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            By{" "}
-            <Image
-              src="/vercel.svg"
-              alt="Vercel Logo"
-              className={styles.vercelLogo}
-              width={100}
-              height={24}
-              priority
-            />
-          </a>
-        </div>
-      </div>
-
-      <div className={styles.center}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js Logo"
-          width={180}
-          height={37}
-          priority
-        />
-      </div>
-
-      <div className={styles.grid}>
-        <a
-          href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
+    <Flex
+      h="full"
+      w="full"
+      display="flex"
+      flexDir="column"
+      justifyContent="center"
+      alignItems="center"
+    >
+      <Flex justifyContent="space-between" w="full">
+        <Heading fontSize="x-large">Your Notes</Heading>
+        <Button
+          leftIcon={<AddIcon />}
+          size="sm"
+          colorScheme="blue"
+          variant="solid"
         >
-          <h2>
-            Docs <span>-&gt;</span>
-          </h2>
-          <p>Find in-depth information about Next.js features and API.</p>
-        </a>
+          Add
+        </Button>
+      </Flex>
 
-        <a
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Learn <span>-&gt;</span>
-          </h2>
-          <p>Learn about Next.js in an interactive course with&nbsp;quizzes!</p>
-        </a>
+      <SimpleGrid w="full" columns={{ sm: 2, md: 3 }} spacing="8" mt={8}>
+        {isLoading ? (
+          <>
+            <Card
+              rounded={16}
+              boxShadow="md"
+              direction={{ base: "column", sm: "row" }}
+              overflow="hidden"
+              minH={172}
+            >
+              <Stack w="full" p={4}>
+                <CardHeader px={0} py={3}>
+                  <SkeletonText noOfLines={1} spacing="2" skeletonHeight="3" />
+                </CardHeader>
 
-        <a
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Templates <span>-&gt;</span>
-          </h2>
-          <p>Explore starter templates for Next.js.</p>
-        </a>
+                <CardBody px={0} py={2}>
+                  <SkeletonText noOfLines={2} spacing="2" skeletonHeight="4" />
+                </CardBody>
 
-        <a
-          href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-          className={styles.card}
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <h2>
-            Deploy <span>-&gt;</span>
-          </h2>
-          <p>
-            Instantly deploy your Next.js site to a shareable URL with Vercel.
-          </p>
-        </a>
-      </div>
-    </main>
+                <CardFooter p={0} display="flex" justifyContent="end">
+                  <SkeletonText noOfLines={1} spacing="2" skeletonHeight="2" />
+                </CardFooter>
+              </Stack>
+            </Card>
+          </>
+        ) : (
+          notes?.map((note) => (
+            <Card
+              onClick={() => router.push(`/notes/${note.id}`)}
+              rounded={16}
+              boxShadow="md"
+              key={note.id}
+              direction={{ base: "column", sm: "row" }}
+              overflow="hidden"
+              minH={172}
+              cursor="pointer"
+            >
+              <Stack w="full" p={4}>
+                <CardHeader p={0}>
+                  <Flex
+                    justifyContent="space-between"
+                    w="full"
+                    alignItems="center"
+                    gap={2}
+                  >
+                    <Heading size="md">{note.title}</Heading>
+
+                    <Flex gap={2}>
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="gray"
+                        aria-label="Edit note"
+                        icon={<EditIcon />}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      <IconButton
+                        size="sm"
+                        variant="ghost"
+                        colorScheme="gray"
+                        aria-label="Delete note"
+                        icon={<DeleteIcon />}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Flex>
+                  </Flex>
+                </CardHeader>
+
+                <CardBody p={0}>
+                  <Text py="2">{note.body}</Text>
+                </CardBody>
+
+                <CardFooter p={0} display="flex" justifyContent="end">
+                  <Text fontSize="xs" color="gray">
+                    {formatDate(note.createdAt)}
+                  </Text>
+                </CardFooter>
+              </Stack>
+            </Card>
+          ))
+        )}
+      </SimpleGrid>
+    </Flex>
   );
 }
