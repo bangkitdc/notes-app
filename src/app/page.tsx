@@ -225,7 +225,7 @@ export default function Home() {
         onClose={handleClose}
       >
         <AlertDialogOverlay>
-          <AlertDialogContent>
+          <AlertDialogContent mx={8}>
             <AlertDialogHeader fontSize="lg" fontWeight="bold">
               Delete Note
             </AlertDialogHeader>
