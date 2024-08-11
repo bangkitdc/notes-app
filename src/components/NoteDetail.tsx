@@ -8,9 +8,8 @@ import {
   Heading,
   Text,
   Box,
-  IconButton,
+  Link,
 } from "@chakra-ui/react";
-import { useRouter } from "next/navigation";
 import React from "react";
 
 interface NoteDetailProps {
@@ -18,8 +17,6 @@ interface NoteDetailProps {
 }
 
 const NoteDetail: React.FC<NoteDetailProps> = ({ note }) => {
-  const router = useRouter();
-
   return (
     <Box
       maxW="7xl"
@@ -36,12 +33,9 @@ const NoteDetail: React.FC<NoteDetailProps> = ({ note }) => {
       <Flex direction="column" gap={4}>
         <Flex direction="column" gap={2}>
           <Flex direction="row" gap={2} alignItems="center">
-            <IconButton
-              onClick={() => router.push("/")}
-              aria-label="Back button"
-              variant="ghost"
-              icon={<ChevronLeftIcon w={8} h={8} />}
-            />
+            <Link aria-label="Back button" variant="ghost" href="/">
+              <ChevronLeftIcon w={8} h={8} />
+            </Link>
             <Heading>{note?.title}</Heading>
           </Flex>
           <Text fontSize="sm">
